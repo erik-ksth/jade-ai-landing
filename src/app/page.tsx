@@ -357,9 +357,9 @@ export default function Home() {
                     <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-white/5 border border-white/10 shadow-[0_0_18px_rgba(255,255,255,0.12)] transition-transform duration-300 group-hover:scale-110">
                       <f.icon className="w-8 h-8 text-white opacity-90" />
                     </div>
-                    <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-[11px] font-semibold tracking-[0.25em] text-emerald-200 uppercase">
+                    {/* <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-[11px] font-semibold tracking-[0.25em] text-emerald-200 uppercase">
                       Jade
-                    </span>
+                    </span> */}
                   </div>
                   <div className="space-y-3">
                     <h3 className="text-2xl font-semibold text-white">{f.title}</h3>
