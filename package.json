@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@react-three/fiber": "^9.0.0-alpha.8",
+    "@supabase/supabase-js": "^2.80.0",
     "@tabler/icons-react": "^3.35.0",
     "@tailwindcss/cli": "^4.1.17",
     "class-variance-authority": "^0.7.1",

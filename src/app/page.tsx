@@ -7,6 +7,7 @@ import { Spotlight } from "@/components/ui/spotlight-new";
 import { BackgroundRippleEffect } from "@/components/ui/background-ripple-effect";
 import { Sparkles, BarChart3, MessageSquareText, Brain } from "lucide-react";
 import { motion, useScroll, useSpring, type Variants } from "framer-motion";
+import { useCallback, useState, type FormEvent } from "react";
 
 const heroItemVariants: Variants = {
   hidden: { opacity: 0, y: 28 },
@@ -62,6 +63,86 @@ const SectionDivider = () => (
   </div>
 );
 
+type WaitlistStatus = "idle" | "loading" | "success" | "error";
+
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function useWaitlistForm(source: string) {
+  const [email, setEmail] = useState("");
+  const [status, setStatus] = useState<WaitlistStatus>("idle");
+  const [message, setMessage] = useState<string | null>(null);
+
+  const handleChange = useCallback(
+    (value: string) => {
+      setEmail(value);
+      if (status !== "idle") {
+        setStatus("idle");
+        setMessage(null);
+      }
+    },
+    [status],
+  );
+
+  const handleSubmit = useCallback(
+    async (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+
+      const normalizedEmail = email.trim().toLowerCase();
+
+      if (!normalizedEmail) {
+        setStatus("error");
+        setMessage("Please enter your email address.");
+        return;
+      }
+
+      if (!emailPattern.test(normalizedEmail)) {
+        setStatus("error");
+        setMessage("That email doesn’t look right. Try again?");
+        return;
+      }
+
+      setStatus("loading");
+
+      try {
+        const response = await fetch("/api/waitlist", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ email: normalizedEmail, source }),
+        });
+
+        const data = (await response.json()) as { error?: string; message?: string };
+
+        if (!response.ok) {
+          throw new Error(data.error ?? "Unable to join the waitlist.");
+        }
+
+        setStatus("success");
+        setMessage(data.message ?? "You're on the waitlist! We'll be in touch soon.");
+        setEmail("");
+      } catch (error) {
+        console.error("Waitlist submission failed", error);
+        setStatus("error");
+        setMessage(
+          error instanceof Error ? error.message : "We had trouble saving your email. Please try again.",
+        );
+      }
+    },
+    [email, source],
+  );
+
+  return {
+    email,
+    status,
+    message,
+    handleChange,
+    handleSubmit,
+    isLoading: status === "loading",
+  };
+}
+
+
 export default function Home() {
   const { scrollYProgress } = useScroll();
   const scrollProgress = useSpring(scrollYProgress, {
@@ -69,6 +150,9 @@ export default function Home() {
     damping: 20,
     mass: 0.2,
   });
+
+  const heroForm = useWaitlistForm("hero_section");
+  const ctaForm = useWaitlistForm("cta_section");
 
   return (
     <div className="min-h-screen bg-[#020617] text-slate-100">
@@ -145,10 +229,12 @@ export default function Home() {
               Tired of spending 70% of your time cleaning data? JadeAI is an intelligent, all-in-one platform that lets you clean, analyze, and visualize your data using simple English commands. No code, no app-switching -- just results.
             </motion.p>
 
-            <motion.div
+            <motion.form
               className="flex flex-col sm:flex-row gap-4 justify-center max-w-2xl mx-auto pt-4"
               variants={heroItemVariants}
               custom={4}
+              onSubmit={heroForm.handleSubmit}
+              noValidate
             >
               <motion.input
                 type="email"
@@ -160,16 +246,32 @@ export default function Home() {
                   boxShadow: "0px 0px 20px rgba(16, 185, 129, 0.35)",
                   borderColor: "rgb(52 211 153)",
                 }}
+                value={heroForm.email}
+                onChange={(event) => heroForm.handleChange(event.target.value)}
+                disabled={heroForm.isLoading}
               />
               <motion.button
-                type="button"
+                type="submit"
                 className="px-8 py-4 rounded-full bg-emerald-500 text-slate-950 font-semibold transition-all shadow-lg shadow-emerald-500/30 hover:shadow-xl hover:shadow-emerald-500/40"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.97 }}
+                disabled={heroForm.isLoading}
+                aria-busy={heroForm.isLoading}
               >
-                Join Waitlist
+                {heroForm.isLoading ? "Submitting..." : "Join Waitlist"}
               </motion.button>
-            </motion.div>
+            </motion.form>
+            {heroForm.message && (
+              <motion.p
+                className={`text-sm font-medium ${heroForm.status === "success" ? "text-emerald-300" : "text-rose-300"
+                  }`}
+                variants={heroItemVariants}
+                custom={5}
+                aria-live="polite"
+              >
+                {heroForm.message}
+              </motion.p>
+            )}
           </motion.div>
         </div>
       </motion.section>
@@ -389,21 +491,39 @@ export default function Home() {
           <p className="text-lg text-slate-300 max-w-xl">
             Stop wasting time on data cleaning. Start analyzing with JadeAI today.
           </p>
-          <div className="flex w-full flex-col sm:flex-row gap-3 justify-center max-w-lg mx-auto">
+          <form
+            className="flex w-full flex-col sm:flex-row gap-3 justify-center max-w-lg mx-auto"
+            onSubmit={ctaForm.handleSubmit}
+            noValidate
+          >
             <input
               type="email"
               name="email"
               placeholder="Enter your email"
               aria-label="Email address"
               className="w-full sm:flex-1 px-5 py-3 rounded-full bg-white/10 text-white placeholder:text-slate-300 border border-white/20 focus:outline-none focus:border-emerald-300 focus:ring-2 focus:ring-emerald-400/40 transition backdrop-blur-sm"
+              value={ctaForm.email}
+              onChange={(event) => ctaForm.handleChange(event.target.value)}
+              disabled={ctaForm.isLoading}
             />
             <button
-              type="button"
+              type="submit"
               className="px-7 py-3 rounded-full bg-emerald-500 text-slate-950 font-semibold hover:bg-emerald-400 transition-colors shadow-lg shadow-emerald-500/30 whitespace-nowrap"
+              disabled={ctaForm.isLoading}
+              aria-busy={ctaForm.isLoading}
             >
-              Join Waitlist
+              {ctaForm.isLoading ? "Submitting..." : "Join Waitlist"}
             </button>
-          </div>
+          </form>
+          {ctaForm.message && (
+            <p
+              className={`text-sm font-medium ${ctaForm.status === "success" ? "text-emerald-200" : "text-rose-300"
+                }`}
+              aria-live="polite"
+            >
+              {ctaForm.message}
+            </p>
+          )}
         </WavyBackground>
       </section>
 
