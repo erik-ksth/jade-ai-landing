@@ -5,9 +5,12 @@ import JadeAI from "../../public/JadeAI.png";
 import { WavyBackground } from "@/components/ui/wavy-background";
 import { Spotlight } from "@/components/ui/spotlight-new";
 import { BackgroundRippleEffect } from "@/components/ui/background-ripple-effect";
-import { Sparkles, BarChart3, MessageSquareText, Brain } from "lucide-react";
+import { Sparkles, BarChart3, MessageSquareText, Brain, ArrowUpRight, Play, Github } from "lucide-react";
 import { motion, useScroll, useSpring, type Variants } from "framer-motion";
-import { useCallback, useState, type FormEvent } from "react";
+import { useEffect, useRef } from "react";
+
+const APP_URL = "https://jadeaiapp.vercel.app";
+const REPO_URL = "https://github.com/erik-ksth/jade-ai";
 
 const heroItemVariants: Variants = {
   hidden: { opacity: 0, y: 28 },
@@ -63,85 +66,31 @@ const SectionDivider = () => (
   </div>
 );
 
-type WaitlistStatus = "idle" | "loading" | "success" | "error";
+function DemoVideo() {
+  const videoRef = useRef<HTMLVideoElement>(null);
 
-const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  // Respect reduced-motion: show the poster and let people press play themselves
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      videoRef.current?.pause();
+    }
+  }, []);
 
-function useWaitlistForm(source: string) {
-  const [email, setEmail] = useState("");
-  const [status, setStatus] = useState<WaitlistStatus>("idle");
-  const [message, setMessage] = useState<string | null>(null);
-
-  const handleChange = useCallback(
-    (value: string) => {
-      setEmail(value);
-      if (status !== "idle") {
-        setStatus("idle");
-        setMessage(null);
-      }
-    },
-    [status],
+  return (
+    <video
+      ref={videoRef}
+      className="block w-full aspect-video rounded-xl bg-slate-950"
+      src="/demo/jade-ai-demo.mp4"
+      poster="/demo/poster.jpg"
+      autoPlay
+      muted
+      loop
+      playsInline
+      controls
+      aria-label="JadeAI demo: a messy cafe sales spreadsheet is cleaned through chat, then charted on a dashboard"
+    />
   );
-
-  const handleSubmit = useCallback(
-    async (event: FormEvent<HTMLFormElement>) => {
-      event.preventDefault();
-
-      const normalizedEmail = email.trim().toLowerCase();
-
-      if (!normalizedEmail) {
-        setStatus("error");
-        setMessage("Please enter your email address.");
-        return;
-      }
-
-      if (!emailPattern.test(normalizedEmail)) {
-        setStatus("error");
-        setMessage("That email doesn’t look right. Try again?");
-        return;
-      }
-
-      setStatus("loading");
-
-      try {
-        const response = await fetch("/api/waitlist", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ email: normalizedEmail, source }),
-        });
-
-        const data = (await response.json()) as { error?: string; message?: string };
-
-        if (!response.ok) {
-          throw new Error(data.error ?? "Unable to join the waitlist.");
-        }
-
-        setStatus("success");
-        setMessage(data.message ?? "You're on the waitlist! We'll be in touch soon.");
-        setEmail("");
-      } catch (error) {
-        console.error("Waitlist submission failed", error);
-        setStatus("error");
-        setMessage(
-          error instanceof Error ? error.message : "We had trouble saving your email. Please try again.",
-        );
-      }
-    },
-    [email, source],
-  );
-
-  return {
-    email,
-    status,
-    message,
-    handleChange,
-    handleSubmit,
-    isLoading: status === "loading",
-  };
 }
-
 
 export default function Home() {
   const { scrollYProgress } = useScroll();
@@ -150,9 +99,6 @@ export default function Home() {
     damping: 20,
     mass: 0.2,
   });
-
-  const heroForm = useWaitlistForm("hero_section");
-  const ctaForm = useWaitlistForm("cta_section");
 
   return (
     <div className="min-h-screen bg-[#020617] text-slate-100">
@@ -176,10 +122,12 @@ export default function Home() {
               />
             </div>
             <div className="hidden md:flex items-center gap-8">
-              <a href="#features" className="text-slate-300 hover:text-emerald-400 transition-colors">Features</a>
+              <a href="#demo" className="text-slate-300 hover:text-emerald-400 transition-colors">Demo</a>
               <a href="#how-it-works" className="text-slate-300 hover:text-emerald-400 transition-colors">How It Works</a>
-              <a href="#waitlist" className="px-6 py-2 rounded-full bg-emerald-500 text-slate-950 font-semibold hover:bg-emerald-400 transition-colors">
-                Join Waitlist
+              <a href="#features" className="text-slate-300 hover:text-emerald-400 transition-colors">Features</a>
+              <a href={APP_URL} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 px-6 py-2 rounded-full bg-emerald-500 text-slate-950 font-semibold hover:bg-emerald-400 transition-colors">
+                Try the App
+                <ArrowUpRight className="w-4 h-4" />
               </a>
             </div>
           </div>
@@ -188,7 +136,7 @@ export default function Home() {
 
       {/* Hero Section */}
       <motion.section
-        className="relative h-screen flex items-center justify-center pt-32 pb-28 px-6 sm:px-10 lg:px-16 overflow-hidden"
+        className="relative min-h-screen flex items-center justify-center pt-32 pb-28 px-6 sm:px-10 lg:px-16 overflow-hidden"
         initial="hidden"
         animate="visible"
       >
@@ -229,58 +177,67 @@ export default function Home() {
               Tired of spending 70% of your time cleaning data? JadeAI is an intelligent, all-in-one platform that lets you clean, analyze, and visualize your data using simple English commands. No code, no app-switching -- just results.
             </motion.p>
 
-            <motion.form
-              className="flex flex-col sm:flex-row gap-4 justify-center max-w-2xl mx-auto pt-4"
+            <motion.div
+              className="flex flex-col sm:flex-row gap-4 justify-center pt-4"
               variants={heroItemVariants}
               custom={4}
-              onSubmit={heroForm.handleSubmit}
-              noValidate
             >
-              <motion.input
-                type="email"
-                name="email"
-                placeholder="Enter your email"
-                aria-label="Email address"
-                className="w-full sm:flex-1 px-6 py-4 rounded-full bg-slate-900/80 border border-slate-700 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/40 transition relative z-10"
-                whileFocus={{
-                  boxShadow: "0px 0px 20px rgba(16, 185, 129, 0.35)",
-                  borderColor: "rgb(52 211 153)",
-                }}
-                value={heroForm.email}
-                onChange={(event) => heroForm.handleChange(event.target.value)}
-                disabled={heroForm.isLoading}
-              />
-              <motion.button
-                type="submit"
-                className="px-8 py-4 rounded-full bg-emerald-500 text-slate-950 font-semibold transition-all shadow-lg shadow-emerald-500/30 hover:shadow-xl hover:shadow-emerald-500/40"
+              <motion.a
+                href={APP_URL}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full bg-emerald-500 text-slate-950 font-semibold shadow-lg shadow-emerald-500/30 hover:shadow-xl hover:shadow-emerald-500/40 transition-shadow"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.97 }}
-                disabled={heroForm.isLoading}
-                aria-busy={heroForm.isLoading}
               >
-                {heroForm.isLoading ? "Submitting..." : "Join Waitlist"}
-              </motion.button>
-            </motion.form>
-            {heroForm.message && (
-              <motion.p
-                className={`text-sm font-medium ${heroForm.status === "success" ? "text-emerald-300" : "text-rose-300"
-                  }`}
-                variants={heroItemVariants}
-                custom={5}
-                aria-live="polite"
+                Try the Live App
+                <ArrowUpRight className="w-5 h-5" />
+              </motion.a>
+              <motion.a
+                href="#demo"
+                className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full border border-slate-700 bg-slate-900/70 text-slate-100 font-semibold hover:border-emerald-400/60 transition-colors"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.97 }}
               >
-                {heroForm.message}
-              </motion.p>
-            )}
+                <Play className="w-5 h-5" />
+                Watch the Demo
+              </motion.a>
+            </motion.div>
           </motion.div>
         </div>
       </motion.section>
 
 
+      {/* Demo Section */}
+      <motion.section
+        id="demo"
+        className="relative z-20 px-6 sm:px-10 lg:px-16 pt-8 scroll-mt-24"
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.2 }}
+      >
+        <div className="max-w-6xl mx-auto">
+          <motion.div className="text-center mb-12" variants={sectionTitleVariants}>
+            <motion.h2 className="text-5xl font-bold text-white mb-6">
+              See It in Action
+            </motion.h2>
+            <motion.p className="text-lg text-slate-400 max-w-2xl mx-auto">
+              500 rows of messy cafe sales, cleaned and charted in under a minute.
+            </motion.p>
+          </motion.div>
+          <motion.div
+            className="rounded-2xl border border-white/10 bg-slate-950/80 p-2 shadow-[0_40px_120px_rgba(16,185,129,0.12)]"
+            variants={sectionTitleVariants}
+          >
+            <DemoVideo />
+          </motion.div>
+        </div>
+      </motion.section>
+
       {/* How It Works Section */}
       <motion.section
         id="how-it-works"
-        className="relative -mt-24 sm:-mt-32 py-32 px-6 sm:px-10 lg:px-16 overflow-hidden bg-linear-to-b from-[#040a16] to-transparent"
+        className="relative py-32 px-6 sm:px-10 lg:px-16 overflow-hidden"
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true, amount: 0.35 }}
@@ -478,7 +435,7 @@ export default function Home() {
       </motion.section>
 
       {/* CTA Section - Fixed Size */}
-      <section id="waitlist" className="relative flex items-center justify-center w-screen h-200 py-16 px-4 sm:px-6 lg:px-8 overflow-hidden">
+      <section id="try" className="relative flex items-center justify-center w-screen h-200 py-16 px-4 sm:px-6 lg:px-8 overflow-hidden">
         <WavyBackground
           className="px-8 py-12 flex flex-col items-center text-center gap-5 w-screen"
           backgroundFill="#020617"
@@ -486,44 +443,31 @@ export default function Home() {
           blur={10}
         >
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white max-w-2xl leading-tight">
-            Ready to Transform Your Data Analysis?
+            Try It With Your Own Data
           </h2>
           <p className="text-lg text-slate-300 max-w-xl">
-            Stop wasting time on data cleaning. Start analyzing with JadeAI today.
+            Upload a CSV or Excel file, or start from the built-in sample dataset. No sign-up needed.
           </p>
-          <form
-            className="flex w-full flex-col sm:flex-row gap-3 justify-center max-w-lg mx-auto"
-            onSubmit={ctaForm.handleSubmit}
-            noValidate
-          >
-            <input
-              type="email"
-              name="email"
-              placeholder="Enter your email"
-              aria-label="Email address"
-              className="w-full sm:flex-1 px-5 py-3 rounded-full bg-white/10 text-white placeholder:text-slate-300 border border-white/20 focus:outline-none focus:border-emerald-300 focus:ring-2 focus:ring-emerald-400/40 transition backdrop-blur-sm"
-              value={ctaForm.email}
-              onChange={(event) => ctaForm.handleChange(event.target.value)}
-              disabled={ctaForm.isLoading}
-            />
-            <button
-              type="submit"
-              className="px-7 py-3 rounded-full bg-emerald-500 text-slate-950 font-semibold hover:bg-emerald-400 transition-colors shadow-lg shadow-emerald-500/30 whitespace-nowrap"
-              disabled={ctaForm.isLoading}
-              aria-busy={ctaForm.isLoading}
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <a
+              href={APP_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center justify-center gap-2 px-7 py-3 rounded-full bg-emerald-500 text-slate-950 font-semibold hover:bg-emerald-400 transition-colors shadow-lg shadow-emerald-500/30"
             >
-              {ctaForm.isLoading ? "Submitting..." : "Join Waitlist"}
-            </button>
-          </form>
-          {ctaForm.message && (
-            <p
-              className={`text-sm font-medium ${ctaForm.status === "success" ? "text-emerald-200" : "text-rose-300"
-                }`}
-              aria-live="polite"
+              Open the Live App
+              <ArrowUpRight className="w-5 h-5" />
+            </a>
+            <a
+              href={REPO_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center justify-center gap-2 px-7 py-3 rounded-full bg-white/10 text-white font-semibold border border-white/20 hover:border-emerald-300/60 transition-colors backdrop-blur-sm"
             >
-              {ctaForm.message}
-            </p>
-          )}
+              <Github className="w-5 h-5" />
+              View the Code
+            </a>
+          </div>
         </WavyBackground>
       </section>
 
