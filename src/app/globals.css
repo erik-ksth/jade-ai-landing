@@ -1,72 +1,63 @@
 @import "tailwindcss";
 
 /*
- * The page moves from dark to light: messy data lives on a near-black jade stage,
- * clean data on a bright surface. Archivo is the only family: extra-wide (wdth 125)
- * for display, normal width for text. Geist Mono only for literal data and code.
+ * Documentation of a precise tool: a cool, bright page in near-black ink.
+ * Jade is the signal for "clean"; amber is reserved for invalid data.
+ * Funnel Display / Funnel Sans carry the voice; Geist Mono appears only
+ * for literal data, code, and figure captions.
  */
 @theme inline {
-  --font-sans: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-funnel-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-funnel-display), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 
-  --color-stage: oklch(0.13 0.015 165);
-  --color-stage-raised: oklch(0.18 0.018 165);
-  --color-stage-line: oklch(0.28 0.02 165);
-  --color-on-stage: oklch(0.96 0.01 160);
-  --color-on-stage-soft: oklch(0.74 0.02 160);
+  --color-paper: oklch(0.985 0.003 165);
+  --color-panel: oklch(0.965 0.005 165);
+  --color-ink: oklch(0.19 0.012 165);
+  --color-ink-soft: oklch(0.45 0.012 165);
+  --color-ink-faint: oklch(0.62 0.01 165);
+  --color-rule: oklch(0.9 0.006 165);
+  --color-rule-strong: oklch(0.82 0.008 165);
 
-  --color-jade-950: oklch(0.22 0.042 165);
-  --color-jade-900: oklch(0.29 0.058 164);
-  --color-jade-700: oklch(0.47 0.09 160);
-  --color-jade-400: oklch(0.74 0.13 158);
-  --color-jade-300: oklch(0.83 0.11 158);
-  --color-jade-100: oklch(0.95 0.03 160);
-  --color-amber: oklch(0.82 0.15 72);
+  --color-jade: oklch(0.5 0.1 158);
+  --color-jade-soft: oklch(0.95 0.03 158);
+  --color-jade-bright: oklch(0.72 0.13 158);
+  --color-amber: oklch(0.6 0.13 65);
+  --color-amber-soft: oklch(0.96 0.04 80);
 
-  --color-surface: oklch(0.975 0.005 165);
-  --color-ink: oklch(0.2 0.018 165);
-  --color-ink-soft: oklch(0.45 0.016 165);
-  --color-rule: oklch(0.89 0.01 165);
+  --color-night: oklch(0.15 0.01 165);
 
   --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
-  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @layer base {
   html {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    background: var(--color-stage);
   }
   body {
-    background: var(--color-surface);
+    background: var(--color-paper);
     color: var(--color-ink);
     font-family: var(--font-sans);
   }
   h1,
   h2,
   h3 {
+    font-family: var(--font-display);
     text-wrap: balance;
   }
   p {
     text-wrap: pretty;
   }
   ::selection {
-    background: var(--color-jade-300);
-    color: var(--color-jade-950);
+    background: var(--color-jade-soft);
+    color: var(--color-ink);
   }
   :focus-visible {
-    outline: 2px solid var(--color-jade-400);
+    outline: 2px solid var(--color-jade);
     outline-offset: 3px;
     border-radius: 6px;
   }
-}
-
-@utility font-display {
-  font-family: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
-  font-variation-settings: "wdth" 125;
-  font-weight: 760;
-  letter-spacing: -0.035em;
 }
 
 /* Lenis */
@@ -78,66 +69,63 @@ html.lenis body {
   scroll-behavior: auto !important;
 }
 
-/* Page-load choreography: content is visible by default; animation only enhances it */
+/* Page load: content is visible by default; the animation only refines its arrival */
 @keyframes rise {
   from {
     opacity: 0;
-    transform: translateY(18px);
-    filter: blur(6px);
+    transform: translateY(10px);
   }
   to {
     opacity: 1;
     transform: none;
-    filter: none;
   }
 }
 
 .rise {
-  animation: rise 1000ms var(--ease-out-expo) both;
+  animation: rise 900ms var(--ease-out-quart) both;
   animation-delay: var(--delay, 0ms);
 }
 
-/* Pipeline: a highlight steps through the nodes */
-@keyframes node-pulse {
-  0%,
-  16%,
-  100% {
-    border-color: var(--node-border, var(--color-rule));
-    box-shadow: 0 0 0 0 transparent;
+/* Figure annotations: leader lines draw down after the figure arrives */
+@keyframes draw-down {
+  from {
+    transform: scaleY(0);
   }
-  4%,
-  9% {
-    border-color: var(--color-jade-400);
-    box-shadow: 0 0 0 4px oklch(0.74 0.13 158 / 0.18);
+  to {
+    transform: scaleY(1);
   }
 }
 
-@keyframes arrow-pulse {
+.leader {
+  transform-origin: top;
+  animation: draw-down 700ms var(--ease-out-quart) both;
+  animation-delay: var(--delay, 0ms);
+}
+
+/* Pipeline: a quiet highlight steps through the nodes */
+@keyframes node-pulse {
   0%,
-  14%,
+  12%,
   100% {
-    color: oklch(0.2 0.018 165 / 0.25);
+    border-color: var(--color-rule);
+    background-color: white;
   }
-  4%,
-  8% {
-    color: var(--color-jade-700);
+  3%,
+  7% {
+    border-color: var(--color-jade);
+    background-color: var(--color-jade-soft);
   }
 }
 
 .pipeline-node {
-  animation: node-pulse 3.9s ease-in-out infinite;
-  animation-delay: var(--pulse-delay, 0s);
-}
-
-.pipeline-arrow {
-  animation: arrow-pulse 3.9s ease-in-out infinite;
+  animation: node-pulse 7.2s ease-in-out infinite;
   animation-delay: var(--pulse-delay, 0s);
 }
 
 @media (prefers-reduced-motion: reduce) {
   .rise,
-  .pipeline-node,
-  .pipeline-arrow {
+  .leader,
+  .pipeline-node {
     animation: none;
   }
 }
