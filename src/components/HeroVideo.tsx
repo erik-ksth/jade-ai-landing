@@ -25,7 +25,7 @@ export default function HeroVideo() {
     <div className="group relative">
       <video
         ref={videoRef}
-        className="block aspect-video w-full rounded-[14px] bg-graphite"
+        className="block aspect-video w-full rounded-[14px] bg-stage"
         src="/demo/jade-ai-demo.mp4"
         poster="/demo/poster.jpg"
         autoPlay

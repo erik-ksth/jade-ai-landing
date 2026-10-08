@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
-import { Familjen_Grotesk, Geist_Mono } from "next/font/google";
+import { Archivo, Geist_Mono } from "next/font/google";
+import SmoothScroll from "@/components/SmoothScroll";
 import "./globals.css";
 
-const familjen = Familjen_Grotesk({
-  variable: "--font-familjen",
+const archivo = Archivo({
+  variable: "--font-archivo",
   subsets: ["latin"],
+  axes: ["wdth"],
 });
 
 const geistMono = Geist_Mono({
@@ -30,7 +32,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${familjen.variable} ${geistMono.variable}`}>{children}</body>
+      <body className={`${archivo.variable} ${geistMono.variable}`}>
+        <SmoothScroll />
+        {children}
+      </body>
     </html>
   );
 }
